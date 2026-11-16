@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / C++ / Arduino builds
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+build/
+.pio/
+.vscode/
+.idea/
+
+# Environments
+env/
+venv/
+ENV/
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini

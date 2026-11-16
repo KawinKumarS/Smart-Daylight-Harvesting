@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Daylight Harvesting System | Sustainable Building Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-alt: #1e293b;
+      --border: #263449;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --sun: #facc15;
+      --sun-soft: rgba(250, 204, 21, 0.16);
+      --led: #38bdf8;
+      --led-soft: rgba(56, 189, 248, 0.16);
+      --green: #22c55e;
+      --green-soft: rgba(34, 197, 94, 0.16);
+      --teal: #14b8a6;
+      --danger: #ef4444;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top right, #13223b 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+    .app-shell {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 20px 24px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #facc15, #22c55e);
+      color: #0b1120;
+      font-size: 24px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+    .brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+    .subtitle { font-size: 0.85rem; color: var(--muted); }
+    .topbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+    }
+    .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .pill.connected .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .pill.sim .dot { background: var(--sun); box-shadow: 0 0 8px var(--sun); }
+    .mode-pill {
+      background: var(--green-soft);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: #86efac;
+    }
+    .mode-pill.manual {
+      background: var(--led-soft);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #7dd3fc;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s ease, background 0.15s ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary { background: var(--surface-alt); color: var(--text); }
+    .btn-secondary:hover { background: #283548; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .card-head h2 { font-size: 1rem; font-weight: 600; }
+    .card-hint { font-size: 0.78rem; color: var(--muted); }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .kpi-card { display: flex; flex-direction: column; gap: 10px; }
+    .kpi-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .kpi-label { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--sun-soft);
+      color: #fde047;
+      white-space: nowrap;
+    }
+    .badge-info { background: var(--led-soft); color: #7dd3fc; }
+    .badge-green { background: var(--green-soft); color: #86efac; }
+    .badge-teal { background: rgba(20, 184, 166, 0.16); color: #5eead4; }
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .kpi-value .unit { font-size: 0.95rem; font-weight: 500; color: var(--muted); }
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-alt);
+      overflow: hidden;
+    }
+    .progress-fill { height: 100%; border-radius: 999px; transition: width 0.35s ease; }
+    .sun-fill { background: linear-gradient(90deg, #f59e0b, #fde047); }
+    .led-fill { background: linear-gradient(90deg, #0284c7, #7dd3fc); }
+    .green-fill { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .kpi-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: auto;
+    }
+    .kpi-footer strong { color: var(--text); }
+    .kpi-subgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--surface-alt);
+      padding: 8px 10px;
+      border-radius: 9px;
+    }
+    .mini-stat { display: flex; flex-direction: column; }
+    .mini-label { font-size: 0.72rem; color: var(--muted); }
+    .mini-stat strong { font-size: 0.9rem; color: #5eead4; }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.55fr;
+      gap: 16px;
+    }
+    .room-stage {
+      background: #090e1a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+    }
+    .room-svg { width: 100%; height: auto; display: block; }
+    .room-legend, .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    .sun-swatch { background: var(--sun); }
+    .led-swatch { background: var(--led); }
+    .target-swatch { background: var(--green); }
+    .target-line-swatch {
+      border-top: 2px dashed var(--green);
+      height: 0;
+      width: 14px;
+    }
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 255px;
+      background: #090e1a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+    }
+    #telemetryChart { width: 100%; height: 100%; display: block; }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .control-group { margin-bottom: 14px; }
+    .control-group:last-child { margin-bottom: 0; }
+    .control-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .row-inline { display: flex; gap: 8px; }
+    .row-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .input-select, .input-number {
+      width: 100%;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+    }
+    .help-text { margin-top: 5px; font-size: 0.76rem; color: var(--muted); }
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .seg-btn.active { background: #0284c7; color: #fff; }
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+    .slider-head label { color: var(--muted); font-weight: 600; }
+    input[type="range"] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+    .slider-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .disabled-block { opacity: 0.45; pointer-events: none; }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .preset-btn {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .preset-btn.active {
+      background: var(--sun-soft);
+      border-color: var(--sun);
+      color: #fef08a;
+    }
+    .console-box {
+      background: #070b14;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px;
+      height: 120px;
+      overflow-y: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.76rem;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+    }
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main-grid, .controls-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">☀</div>
+        <div>
+          <h1>Smart Daylight Harvesting System</h1>
+          <p class="subtitle">Sustainable Building Intelligent Lighting &amp; Energy Monitor</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="pill" id="connectionPill">
+          <span class="dot"></span>
+          <span id="connectionText">Simulator Active</span>
+        </div>
+        <div class="pill mode-pill" id="modePill">AUTO HARVESTING</div>
+        <button class="btn btn-secondary" id="exportCsvBtn" title="Download telemetry CSV">Export CSV</button>
+        <button class="btn btn-secondary" id="resetStatsBtn" title="Reset session stats">Reset Stats</button>
+      </div>
+    </header>
+
+    <section class="kpi-grid">
+      <article class="card kpi-card kpi-sun">
+        <div class="kpi-header">
+          <span class="kpi-label">Natural Daylight (LDR)</span>
+          <span class="badge" id="daylightConditionBadge">Bright Daylight</span>
+        </div>
+        <div class="kpi-value"><span id="luxValue">620</span><span class="unit">lux</span></div>
+        <div class="progress-track"><div class="progress-fill sun-fill" id="daylightBar" style="width: 62%"></div></div>
+        <div class="kpi-footer">
+          <span>Daylight Share: <strong id="daylightPct">62%</strong></span>
+          <span>ADC: <strong id="adcValue">2450</strong></span>
+        </div>
+      </article>
+
+      <article class="card kpi-card kpi-led">
+        <div class="kpi-header">
+          <span class="kpi-label">LED Brightness (MOSFET PWM)</span>
+          <span class="badge badge-info" id="lightingStatusBadge">Daylight Sufficient</span>
+        </div>
+        <div class="kpi-value"><span id="ledPctValue">0</span><span class="unit">%</span></div>
+        <div class="progress-track"><div class="progress-fill led-fill" id="ledBar" style="width: 0%"></div></div>
+        <div class="kpi-footer">
+          <span>PWM Duty: <strong id="pwmValue">0</strong> / 255</span>
+          <span>Draw: <strong id="powerValue">0.0 W</strong></span>
+        </div>
+      </article>
+
+      <article class="card kpi-card kpi-energy">
+        <div class="kpi-header">
+          <span class="kpi-label">Live Energy Reduction</span>
+          <span class="badge badge-green" id="savingBadge">100% ECO ACTIVE</span>
+        </div>
+        <div class="kpi-value"><span id="savedPctValue">100</span><span class="unit">%</span></div>
+        <div class="progress-track"><div class="progress-fill green-fill" id="savedBar" style="width: 100%"></div></div>
+        <div class="kpi-footer">
+          <span>Power Saved: <strong id="savedWattsValue">12.0 W</strong></span>
+          <span>Rated Load: <strong id="ratedWattsLabel">12 W</strong></span>
+        </div>
+      </article>
+
+      <article class="card kpi-card kpi-impact">
+        <div class="kpi-header">
+          <span class="kpi-label">Cumulative Sustainability</span>
+          <span class="badge badge-teal">LIVE SESSION</span>
+        </div>
+        <div class="kpi-value"><span id="savedWhValue">0.00</span><span class="unit">Wh</span></div>
+        <div class="kpi-subgrid">
+          <div class="mini-stat">
+            <span class="mini-label">CO₂ Avoided</span>
+            <strong id="co2Value">0.0 g</strong>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-label">Est. Cost Saved</span>
+            <strong id="costValue">₹0.00</strong>
+          </div>
+        </div>
+        <div class="kpi-footer">
+          <span>Room Total: <strong id="totalRoomLux">620 lux</strong></span>
+          <span>Target: <strong id="targetLuxLabel">500 lux</strong></span>
+        </div>
+      </article>
+    </section>
+
+    <section class="main-grid">
+      <article class="card visualizer-card">
+        <div class="card-head">
+          <h2>Live Room Illumination Balance</h2>
+          <span class="card-hint">Natural Sunlight + Supplemental LED</span>
+        </div>
+        <div class="room-stage">
+          <svg viewBox="0 0 420 250" class="room-svg" aria-label="Room Daylight and LED Visualization">
+            <defs>
+              <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" id="skyStopTop" stop-color="#38bdf8" />
+                <stop offset="100%" id="skyStopBottom" stop-color="#fef08a" />
+              </linearGradient>
+              <linearGradient id="sunBeamGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fde047" stop-opacity="0.72" />
+                <stop offset="100%" stop-color="#fde047" stop-opacity="0.02" />
+              </linearGradient>
+              <radialGradient id="ledConeGrad" cx="50%" cy="0%" r="85%">
+                <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.9" />
+                <stop offset="60%" stop-color="#7dd3fc" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <rect x="20" y="20" width="380" height="210" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2" />
+            <polygon points="20,195 400,195 400,230 20,230" fill="#1e293b" />
+            <rect x="24" y="55" width="22" height="95" rx="3" fill="url(#skyGrad)" stroke="#94a3b8" stroke-width="2" />
+            <polygon id="sunBeam" points="46,55 46,150 320,195 210,195" fill="url(#sunBeamGrad)" opacity="0.6" />
+            <rect x="175" y="22" width="110" height="10" rx="4" fill="#475569" />
+            <rect id="ledBarGlow" x="182" y="30" width="96" height="6" rx="3" fill="#38bdf8" opacity="0.1" />
+            <polygon id="ledCone" points="182,36 278,36 355,195 105,195" fill="url(#ledConeGrad)" opacity="0.0" />
+            <rect x="170" y="160" width="120" height="8" rx="2" fill="#64748b" />
+            <rect x="182" y="168" width="8" height="27" fill="#475569" />
+            <rect x="270" y="168" width="8" height="27" fill="#475569" />
+            <rect x="210" y="147" width="40" height="13" rx="3" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
+            <circle cx="230" cy="147" r="4" fill="#facc15" />
+            <text x="230" y="185" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="monospace">LDR + ESP32</text>
+            <text x="58" y="47" fill="#fde047" font-size="11" font-weight="600">Sunlight: <tspan id="svgLuxText">620 lux</tspan></text>
+            <text x="230" y="52" text-anchor="middle" fill="#7dd3fc" font-size="11" font-weight="600">LED PWM: <tspan id="svgLedText">0%</tspan></text>
+          </svg>
+        </div>
+        <div class="room-legend">
+          <span><i class="swatch sun-swatch"></i> Natural Daylight</span>
+          <span><i class="swatch led-swatch"></i> Supplemental LED</span>
+          <span><i class="swatch target-swatch"></i> Maintained Comfort Target</span>
+        </div>
+      </article>
+
+      <article class="card chart-card">
+        <div class="card-head">
+          <h2>Real-Time Daylight vs. LED Dimming</h2>
+          <span class="card-hint">LED automatically dims down as natural sunlight increases</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+        <div class="chart-legend">
+          <span><i class="swatch sun-swatch"></i> Daylight Intensity (lux)</span>
+          <span><i class="swatch led-swatch"></i> LED Brightness (%)</span>
+          <span><i class="swatch target-line-swatch"></i> Target Lux Setpoint</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="controls-grid">
+      <article class="card">
+        <div class="card-head">
+          <h2>System Control &amp; Hardware</h2>
+          <span class="card-hint">ESP32 Hardware or Built-in Simulator</span>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Data Source (ESP32 USB / Simulator)</label>
+          <div class="row-inline">
+            <select id="portSelect" class="input-select">
+              <option value="SIMULATOR">Built-in Daylight Simulator (Active)</option>
+            </select>
+            <button class="btn btn-secondary" id="refreshPortsBtn">Scan Ports</button>
+            <button class="btn btn-primary" id="connectBtn">Connect</button>
+          </div>
+          <p class="help-text">Connect an ESP32 over USB or use the interactive simulator below to test live lighting control.</p>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Lighting Control Mode</label>
+          <div class="segmented">
+            <button class="seg-btn active" id="btnModeAuto">Auto Daylight Harvesting</button>
+            <button class="seg-btn" id="btnModeManual">Manual Override</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="slider-head">
+            <label for="targetLuxSlider">Target Room Illumination</label>
+            <strong id="targetLuxDisplay">500 lux</strong>
+          </div>
+          <input type="range" id="targetLuxSlider" min="100" max="850" step="10" value="500" />
+          <div class="slider-scale"><span>100 lux (Dim)</span><span>500 lux (Office/Classroom)</span><span>850 lux (Studio)</span></div>
+        </div>
+
+        <div class="control-group disabled-block" id="manualDimmerGroup">
+          <div class="slider-head">
+            <label for="manualPctSlider">Manual LED Brightness (PWM)</label>
+            <strong id="manualPctDisplay">50%</strong>
+          </div>
+          <input type="range" id="manualPctSlider" min="0" max="100" step="1" value="50" />
+        </div>
+
+        <div class="row-two">
+          <div class="control-group">
+            <label for="ratedWattsInput" class="control-label">LED Load Rating (Watts)</label>
+            <input type="number" id="ratedWattsInput" class="input-number" min="1" max="50000" value="12" />
+          </div>
+          <div class="control-group">
+            <label for="tariffInput" class="control-label">Electricity Rate (₹/kWh)</label>
+            <input type="number" id="tariffInput" class="input-number" min="0" step="0.5" value="7.0" />
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Daylight Simulator &amp; Event Console</h2>
+          <span class="card-hint" id="simBadge">Interactive Simulator Active</span>
+        </div>
+        <div id="simulatorControls">
+          <div class="control-group">
+            <label class="control-label">Weather / Sunlight Condition</label>
+            <div class="preset-grid">
+              <button class="preset-btn active" data-weather="sunny">☀ Clear Sun</button>
+              <button class="preset-btn" data-weather="cloudy">⛅ Passing Clouds</button>
+              <button class="preset-btn" data-weather="overcast">☁ Overcast</button>
+              <button class="preset-btn" data-weather="night">🌙 Night</button>
+              <button class="preset-btn" data-weather="auto_cycle">🔄 24h Day Cycle</button>
+              <button class="preset-btn" data-weather="custom">🎛 Custom Lux</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-head">
+              <label for="simHourSlider">Simulated Time of Day</label>
+              <strong id="simHourDisplay">10:30</strong>
+            </div>
+            <input type="range" id="simHourSlider" min="0" max="24" step="0.25" value="10.5" />
+          </div>
+
+          <div class="control-group">
+            <div class="slider-head">
+              <label for="simCustomLuxSlider">Custom Sunlight Intensity (Test LDR)</label>
+              <strong id="simCustomLuxDisplay">620 lux</strong>
+            </div>
+            <input type="range" id="simCustomLuxSlider" min="0" max="1000" step="10" value="620" />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">System &amp; Serial Log</label>
+          <div class="console-box" id="consoleLog"></div>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+
+      const connectionPill = $("connectionPill");
+      const connectionText = $("connectionText");
+      const modePill = $("modePill");
+      const portSelect = $("portSelect");
+      const refreshPortsBtn = $("refreshPortsBtn");
+      const connectBtn = $("connectBtn");
+      const exportCsvBtn = $("exportCsvBtn");
+      const resetStatsBtn = $("resetStatsBtn");
+
+      const btnModeAuto = $("btnModeAuto");
+      const btnModeManual = $("btnModeManual");
+      const targetLuxSlider = $("targetLuxSlider");
+      const targetLuxDisplay = $("targetLuxDisplay");
+      const manualPctSlider = $("manualPctSlider");
+      const manualPctDisplay = $("manualPctDisplay");
+      const manualDimmerGroup = $("manualDimmerGroup");
+      const ratedWattsInput = $("ratedWattsInput");
+      const tariffInput = $("tariffInput");
+
+      const simHourSlider = $("simHourSlider");
+      const simHourDisplay = $("simHourDisplay");
+      const simCustomLuxSlider = $("simCustomLuxSlider");
+      const simCustomLuxDisplay = $("simCustomLuxDisplay");
+      const presetBtns = Array.from(document.querySelectorAll(".preset-btn"));
+      const consoleLog = $("consoleLog");
+      const chartCanvas = $("telemetryChart");
+
+      // State
+      let mode = "AUTO";
+      let targetLux = 500;
+      let manualPct = 50;
+      let ratedWatts = 12.0;
+      let tariff = 7.0;
+      let weather = "sunny";
+      let hour = 10.5;
+      let customLux = 620;
+      let currentLux = 620;
+      let currentPwm = 0;
+      let baselineWh = 0;
+      let actualWh = 0;
+      const history = [];
+      const logs = [];
+
+      function logMsg(msg) {
+        const d = new Date().toTimeString().split(" ")[0];
+        logs.push(`[${d}] ${msg}`);
+        if (logs.length > 50) logs.shift();
+        consoleLog.textContent = logs.join("\n");
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+      }
+
+      logMsg("Standalone Dashboard initialized in Simulator Mode.");
+
+      // Controls
+      btnModeAuto.onclick = () => { mode = "AUTO"; renderMode(); logMsg("Switched to AUTO daylight harvesting."); };
+      btnModeManual.onclick = () => { mode = "MANUAL"; renderMode(); logMsg("Switched to MANUAL override."); };
+
+      function renderMode() {
+        if (mode === "AUTO") {
+          modePill.textContent = "AUTO HARVESTING";
+          modePill.className = "pill mode-pill";
+          btnModeAuto.classList.add("active");
+          btnModeManual.classList.remove("active");
+          manualDimmerGroup.classList.add("disabled-block");
+        } else {
+          modePill.textContent = "MANUAL OVERRIDE";
+          modePill.className = "pill mode-pill manual";
+          btnModeManual.classList.add("active");
+          btnModeAuto.classList.remove("active");
+          manualDimmerGroup.classList.remove("disabled-block");
+        }
+      }
+
+      targetLuxSlider.oninput = (e) => {
+        targetLux = parseFloat(e.target.value);
+        targetLuxDisplay.textContent = `${targetLux} lux`;
+      };
+      targetLuxSlider.onchange = () => logMsg(`Target lux set to ${targetLux}`);
+
+      manualPctSlider.oninput = (e) => {
+        manualPct = parseFloat(e.target.value);
+        manualPctDisplay.textContent = `${manualPct}%`;
+        mode = "MANUAL";
+        renderMode();
+      };
+
+      simHourSlider.oninput = (e) => {
+        hour = parseFloat(e.target.value);
+        const mins = Math.round((hour % 24) * 60);
+        const hh = String(Math.floor(mins / 60)).padStart(2, "0");
+        const mm = String(mins % 60).padStart(2, "0");
+        simHourDisplay.textContent = `${hh}:${mm}`;
+      };
+
+      simCustomLuxSlider.oninput = (e) => {
+        customLux = parseFloat(e.target.value);
+        simCustomLuxDisplay.textContent = `${customLux} lux`;
+        weather = "custom";
+        presetBtns.forEach(b => b.classList.toggle("active", b.dataset.weather === "custom"));
+      };
+
+      ratedWattsInput.onchange = (e) => { ratedWatts = Math.max(1, parseFloat(e.target.value)); };
+      tariffInput.onchange = (e) => { tariff = Math.max(0, parseFloat(e.target.value)); };
+
+      presetBtns.forEach(btn => {
+        btn.onclick = () => {
+          weather = btn.dataset.weather;
+          presetBtns.forEach(b => b.classList.toggle("active", b === btn));
+          logMsg(`Preset selected: ${weather}`);
+        };
+      });
+
+      resetStatsBtn.onclick = () => {
+        baselineWh = 0;
+        actualWh = 0;
+        history.length = 0;
+        logMsg("Statistics and chart history reset.");
+      };
+
+      exportCsvBtn.onclick = () => {
+        let csv = "timestamp,lux,led_pwm,led_pct,power_w,saved_w,saved_wh\n";
+        history.forEach(h => {
+          csv += `${h.time},${h.lux.toFixed(1)},${h.pwm},${h.led_pct.toFixed(1)},${h.power_w.toFixed(2)},${h.saved_w.toFixed(2)},${h.saved_wh.toFixed(4)}\n`;
+        });
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "daylight_telemetry.csv";
+        a.click();
+      };
+
+      // Simulator loop
+      function computeSolarLux(dt) {
+        if (weather === "custom") return customLux;
+        if (weather === "night") return 10 + (Math.random() * 4 - 2);
+        if (weather === "auto_cycle") {
+          hour = (hour + 0.25 * dt) % 24;
+          const mins = Math.round((hour % 24) * 60);
+          simHourDisplay.textContent = `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+          simHourSlider.value = hour;
+        }
+        let base = 12;
+        if (hour >= 6 && hour <= 18.5) {
+          const ph = (hour - 6) / 12.5;
+          base = Math.sin(ph * Math.PI) * 940;
+        }
+        if (weather === "sunny") return Math.max(base, 620);
+        if (weather === "cloudy") return base * (0.55 + 0.35 * Math.sin(Date.now() / 2500));
+        if (weather === "overcast") return Math.min(base * 0.35, 270);
+        return base;
+      }
+
+      function tick() {
+        const dt = 0.5;
+        const targetSimLux = computeSolarLux(dt);
+        currentLux += 0.35 * (targetSimLux - currentLux);
+        const lux = Math.max(0, Math.min(1000, currentLux));
+
+        let targetPwm = 0;
+        if (mode === "AUTO") {
+          const deficit = targetLux - lux;
+          if (lux >= targetLux + 20) {
+            targetPwm = 0;
+          } else if (deficit > 0) {
+            targetPwm = Math.round((deficit / targetLux) * 255);
+          }
+        } else {
+          targetPwm = Math.round((manualPct / 100) * 255);
+        }
+
+        if (currentPwm < targetPwm) currentPwm = Math.min(targetPwm, currentPwm + 28);
+        else if (currentPwm > targetPwm) currentPwm = Math.max(targetPwm, currentPwm - 28);
+
+        const ledPct = (currentPwm / 255) * 100;
+        const daylightPct = Math.min(100, (lux / 1000) * 100);
+        const powerW = (ledPct / 100) * ratedWatts;
+        const savedW = Math.max(0, ratedWatts - powerW);
+        const savedPct = Math.max(0, 100 - ledPct);
+
+        const dtH = dt / 3600;
+        baselineWh += ratedWatts * dtH;
+        actualWh += powerW * dtH;
+        const savedWh = Math.max(0, baselineWh - actualWh);
+        const co2SavedG = savedWh * 0.82;
+        const costSaved = (savedWh / 1000) * tariff;
+
+        // Render KPI
+        $("luxValue").textContent = lux.toFixed(0);
+        $("daylightBar").style.width = `${daylightPct}%`;
+        $("daylightPct").textContent = `${daylightPct.toFixed(0)}%`;
+        $("adcValue").textContent = Math.round(250 + (lux / 1000) * 3550);
+
+        let condition = "Peak Sunlight";
+        if (lux < 40) condition = "Night / Dark";
+        else if (lux < 180) condition = "Low / Dusk";
+        else if (lux < 450) condition = "Moderate / Overcast";
+        else if (lux < 750) condition = "Bright Daylight";
+        $("daylightConditionBadge").textContent = condition;
+
+        $("ledPctValue").textContent = ledPct.toFixed(0);
+        $("ledBar").style.width = `${ledPct}%`;
+        $("pwmValue").textContent = currentPwm;
+        $("powerValue").textContent = `${powerW.toFixed(1)} W`;
+
+        let lightStatus = "Daylight Sufficient";
+        if (mode === "MANUAL") lightStatus = `Manual (${ledPct.toFixed(0)}%)`;
+        else if (ledPct > 75) lightStatus = "Full Supplement Needed";
+        else if (ledPct > 35) lightStatus = "Balanced Harvesting";
+        else if (ledPct > 0) lightStatus = "Eco Dimmed (Low Supplement)";
+        $("lightingStatusBadge").textContent = lightStatus;
+
+        $("savedPctValue").textContent = savedPct.toFixed(0);
+        $("savedBar").style.width = `${savedPct}%`;
+        $("savedWattsValue").textContent = `${savedW.toFixed(1)} W`;
+        $("ratedWattsLabel").textContent = `${ratedWatts.toFixed(0)} W`;
+
+        $("savedWhValue").textContent = savedWh.toFixed(2);
+        $("co2Value").textContent = co2SavedG >= 1000 ? `${(co2SavedG / 1000).toFixed(2)} kg` : `${co2SavedG.toFixed(1)} g`;
+        $("costValue").textContent = `₹${costSaved.toFixed(2)}`;
+        $("targetLuxLabel").textContent = `${targetLux.toFixed(0)} lux`;
+        $("totalRoomLux").textContent = `${Math.min(1200, lux + (ledPct / 100) * targetLux).toFixed(0)} lux`;
+
+        // SVG Visualizer
+        const sunNorm = Math.max(0, Math.min(1, lux / 900));
+        const ledNorm = Math.max(0, Math.min(1, ledPct / 100));
+        $("sunBeam").setAttribute("opacity", (0.04 + sunNorm * 0.85).toFixed(2));
+        $("ledCone").setAttribute("opacity", (ledNorm * 0.88).toFixed(2));
+        $("ledBarGlow").setAttribute("opacity", (0.12 + ledNorm * 0.88).toFixed(2));
+        $("skyStopTop").setAttribute("stop-color", sunNorm < 0.08 ? "#0f172a" : "#38bdf8");
+        $("skyStopBottom").setAttribute("stop-color", sunNorm < 0.08 ? "#1e293b" : "#fef08a");
+        $("svgLuxText").textContent = `${lux.toFixed(0)} lux`;
+        $("svgLedText").textContent = `${ledPct.toFixed(0)}%`;
+
+        history.push({
+          time: new Date().toTimeString().split(" ")[0],
+          lux,
+          pwm: currentPwm,
+          led_pct: ledPct,
+          power_w: powerW,
+          saved_w: savedW,
+          saved_wh: savedWh,
+        });
+        if (history.length > 90) history.shift();
+
+        drawChart();
+      }
+
+      function drawChart() {
+        const rect = chartCanvas.parentElement.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.max(300, Math.floor(rect.width - 16));
+        const height = Math.max(180, Math.floor(rect.height - 16));
+
+        if (chartCanvas.width !== width * dpr || chartCanvas.height !== height * dpr) {
+          chartCanvas.width = width * dpr;
+          chartCanvas.height = height * dpr;
+        }
+
+        const ctx = chartCanvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const padL = 44, padR = 44, padT = 16, padB = 26;
+        const plotW = width - padL - padR, plotH = height - padT - padB;
+
+        ctx.strokeStyle = "#1e293b";
+        ctx.lineWidth = 1;
+        ctx.font = "11px Segoe UI, sans-serif";
+        ctx.fillStyle = "#94a3b8";
+
+        for (let i = 0; i <= 4; i++) {
+          const frac = i / 4;
+          const y = padT + plotH * (1 - frac);
+          ctx.beginPath();
+          ctx.moveTo(padL, y);
+          ctx.lineTo(padL + plotW, y);
+          ctx.stroke();
+          ctx.textAlign = "right";
+          ctx.fillText(`${Math.round(frac * 1000)}`, padL - 6, y + 4);
+          ctx.textAlign = "left";
+          ctx.fillText(`${Math.round(frac * 100)}%`, padL + plotW + 6, y + 4);
+        }
+
+        const targetY = padT + plotH * (1 - Math.min(1, targetLux / 1000));
+        ctx.save();
+        ctx.strokeStyle = "#22c55e";
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(padL, targetY);
+        ctx.lineTo(padL + plotW, targetY);
+        ctx.stroke();
+        ctx.restore();
+
+        if (history.length < 2) return;
+        const xFor = (idx) => padL + (idx / (history.length - 1)) * plotW;
+
+        // Sunlight (Yellow)
+        ctx.beginPath();
+        history.forEach((pt, idx) => {
+          const x = xFor(idx);
+          const y = padT + plotH * (1 - Math.max(0, Math.min(1, pt.lux / 1000)));
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = "#facc15";
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+
+        // LED Brightness (Cyan)
+        ctx.beginPath();
+        history.forEach((pt, idx) => {
+          const x = xFor(idx);
+          const y = padT + plotH * (1 - Math.max(0, Math.min(1, pt.led_pct / 100)));
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+
+        ctx.fillStyle = "#64748b";
+        ctx.textAlign = "center";
+        ctx.fillText(`Showing last ${history.length} samples (live 2 Hz stream)`, padL + plotW / 2, height - 6);
+      }
+
+      setInterval(tick, 500);
+      window.addEventListener("resize", drawChart);
+    })();
+  </script>
+</body>
+</html>

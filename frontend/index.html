@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Daylight Harvesting System | Sustainable Building Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Navigation / Status Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">☀</div>
+        <div>
+          <h1>Smart Daylight Harvesting System</h1>
+          <p class="subtitle">Sustainable Building Intelligent Lighting &amp; Energy Monitor</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="pill" id="connectionPill">
+          <span class="dot"></span>
+          <span id="connectionText">Connecting...</span>
+        </div>
+        <div class="pill mode-pill" id="modePill">AUTO HARVESTING</div>
+        <button class="btn btn-secondary" id="exportCsvBtn" title="Download CSV telemetry log">Export CSV</button>
+        <button class="btn btn-secondary" id="resetStatsBtn" title="Reset cumulative energy counters">Reset Stats</button>
+      </div>
+    </header>
+
+    <!-- Main KPI Cards -->
+    <section class="kpi-grid">
+      <article class="card kpi-card kpi-sun">
+        <div class="kpi-header">
+          <span class="kpi-label">Natural Daylight (LDR)</span>
+          <span class="badge" id="daylightConditionBadge">--</span>
+        </div>
+        <div class="kpi-value">
+          <span id="luxValue">0</span><span class="unit">lux</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill sun-fill" id="daylightBar" style="width: 0%"></div>
+        </div>
+        <div class="kpi-footer">
+          <span>Daylight Share: <strong id="daylightPct">0%</strong></span>
+          <span>ADC: <strong id="adcValue">0</strong></span>
+        </div>
+      </article>
+
+      <article class="card kpi-card kpi-led">
+        <div class="kpi-header">
+          <span class="kpi-label">LED Brightness (MOSFET PWM)</span>
+          <span class="badge badge-info" id="lightingStatusBadge">--</span>
+        </div>
+        <div class="kpi-value">
+          <span id="ledPctValue">0</span><span class="unit">%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill led-fill" id="ledBar" style="width: 0%"></div>
+        </div>
+        <div class="kpi-footer">
+          <span>PWM Duty: <strong id="pwmValue">0</strong> / 255</span>
+          <span>Draw: <strong id="powerValue">0.0 W</strong></span>
+        </div>
+      </article>
+
+      <article class="card kpi-card kpi-energy">
+        <div class="kpi-header">
+          <span class="kpi-label">Live Energy Reduction</span>
+          <span class="badge badge-green" id="savingBadge">ECO ACTIVE</span>
+        </div>
+        <div class="kpi-value">
+          <span id="savedPctValue">0</span><span class="unit">%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill green-fill" id="savedBar" style="width: 0%"></div>
+        </div>
+        <div class="kpi-footer">
+          <span>Power Saved: <strong id="savedWattsValue">0.0 W</strong></span>
+          <span>Rated Load: <strong id="ratedWattsLabel">12 W</strong></span>
+        </div>
+      </article>
+
+      <article class="card kpi-card kpi-impact">
+        <div class="kpi-header">
+          <span class="kpi-label">Cumulative Sustainability</span>
+          <span class="badge badge-teal">SESSION</span>
+        </div>
+        <div class="kpi-value">
+          <span id="savedWhValue">0.00</span><span class="unit">Wh</span>
+        </div>
+        <div class="kpi-subgrid">
+          <div class="mini-stat">
+            <span class="mini-label">CO₂ Avoided</span>
+            <strong id="co2Value">0.0 g</strong>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-label">Est. Cost Saved</span>
+            <strong id="costValue">₹0.00</strong>
+          </div>
+        </div>
+        <div class="kpi-footer">
+          <span>Room Total: <strong id="totalRoomLux">0 lux</strong></span>
+          <span>Target: <strong id="targetLuxLabel">500 lux</strong></span>
+        </div>
+      </article>
+    </section>
+
+    <!-- Middle Grid: Room Visualizer + Live Dual-Axis Chart -->
+    <section class="main-grid">
+      <!-- Interactive Room Illumination Visualizer -->
+      <article class="card visualizer-card">
+        <div class="card-head">
+          <h2>Live Room Illumination Balance</h2>
+          <span class="card-hint">Natural Sunlight + Supplemental LED</span>
+        </div>
+        <div class="room-stage">
+          <svg viewBox="0 0 420 250" class="room-svg" aria-label="Room Daylight and LED Visualization">
+            <defs>
+              <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" id="skyStopTop" stop-color="#38bdf8" />
+                <stop offset="100%" id="skyStopBottom" stop-color="#fef08a" />
+              </linearGradient>
+              <linearGradient id="sunBeamGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fde047" stop-opacity="0.72" />
+                <stop offset="100%" stop-color="#fde047" stop-opacity="0.02" />
+              </linearGradient>
+              <radialGradient id="ledConeGrad" cx="50%" cy="0%" r="85%">
+                <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.9" />
+                <stop offset="60%" stop-color="#7dd3fc" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+
+            <!-- Room Walls & Floor -->
+            <rect x="20" y="20" width="380" height="210" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2" />
+            <polygon points="20,195 400,195 400,230 20,230" fill="#1e293b" />
+
+            <!-- Window on Left Wall -->
+            <rect x="24" y="55" width="22" height="95" rx="3" fill="url(#skyGrad)" stroke="#94a3b8" stroke-width="2" />
+            <!-- Sun Beam Entering Room -->
+            <polygon id="sunBeam" points="46,55 46,150 320,195 210,195" fill="url(#sunBeamGrad)" opacity="0.5" />
+
+            <!-- Ceiling LED Fixture -->
+            <rect x="175" y="22" width="110" height="10" rx="4" fill="#475569" />
+            <rect id="ledBarGlow" x="182" y="30" width="96" height="6" rx="3" fill="#38bdf8" opacity="0.6" />
+            <!-- LED Light Cone -->
+            <polygon id="ledCone" points="182,36 278,36 355,195 105,195" fill="url(#ledConeGrad)" opacity="0.5" />
+
+            <!-- Desk + LDR Sensor Node -->
+            <rect x="170" y="160" width="120" height="8" rx="2" fill="#64748b" />
+            <rect x="182" y="168" width="8" height="27" fill="#475569" />
+            <rect x="270" y="168" width="8" height="27" fill="#475569" />
+            <!-- ESP32 + LDR Box on Desk -->
+            <rect x="210" y="147" width="40" height="13" rx="3" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
+            <circle cx="230" cy="147" r="4" fill="#facc15" />
+            <text x="230" y="185" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="monospace">LDR + ESP32</text>
+
+            <!-- Live Labels Inside Scene -->
+            <text x="58" y="47" fill="#fde047" font-size="11" font-weight="600">Sunlight: <tspan id="svgLuxText">0 lux</tspan></text>
+            <text x="230" y="52" text-anchor="middle" fill="#7dd3fc" font-size="11" font-weight="600">LED PWM: <tspan id="svgLedText">0%</tspan></text>
+          </svg>
+        </div>
+        <div class="room-legend">
+          <span><i class="swatch sun-swatch"></i> Natural Daylight</span>
+          <span><i class="swatch led-swatch"></i> Supplemental LED</span>
+          <span><i class="swatch target-swatch"></i> Maintained Comfort Target</span>
+        </div>
+      </article>
+
+      <!-- Real-Time Trend Chart -->
+      <article class="card chart-card">
+        <div class="card-head">
+          <h2>Real-Time Daylight vs. LED Dimming</h2>
+          <span class="card-hint">Notice how LED brightness drops automatically as sunlight rises</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+        <div class="chart-legend">
+          <span><i class="swatch sun-swatch"></i> Daylight Intensity (lux)</span>
+          <span><i class="swatch led-swatch"></i> LED Brightness (%)</span>
+          <span><i class="swatch target-line-swatch"></i> Target Lux Setpoint</span>
+        </div>
+      </article>
+    </section>
+
+    <!-- Bottom Grid: Hardware & Control Panel + Simulator & Logs -->
+    <section class="controls-grid">
+      <!-- Control Panel -->
+      <article class="card">
+        <div class="card-head">
+          <h2>System Control &amp; Hardware</h2>
+          <span class="card-hint">ESP32 Serial or Built-in Simulator</span>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Data Source (ESP32 COM Port / Simulator)</label>
+          <div class="row-inline">
+            <select id="portSelect" class="input-select">
+              <option value="SIMULATOR">Built-in Daylight Simulator</option>
+            </select>
+            <button class="btn btn-secondary" id="refreshPortsBtn">Scan Ports</button>
+            <button class="btn btn-primary" id="connectBtn">Apply</button>
+          </div>
+          <p class="help-text" id="portHint">Connect your ESP32 via USB to stream live LDR &amp; PWM data, or use the Simulator for testing.</p>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Lighting Control Mode</label>
+          <div class="segmented">
+            <button class="seg-btn active" id="btnModeAuto" data-mode="AUTO">Auto Daylight Harvesting</button>
+            <button class="seg-btn" id="btnModeManual" data-mode="MANUAL">Manual Override</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="slider-head">
+            <label for="targetLuxSlider">Target Room Illumination</label>
+            <strong id="targetLuxDisplay">500 lux</strong>
+          </div>
+          <input type="range" id="targetLuxSlider" min="100" max="850" step="10" value="500" />
+          <div class="slider-scale"><span>100 lux (Dim)</span><span>500 lux (Office)</span><span>850 lux (Studio)</span></div>
+        </div>
+
+        <div class="control-group" id="manualDimmerGroup">
+          <div class="slider-head">
+            <label for="manualPctSlider">Manual LED Brightness (PWM)</label>
+            <strong id="manualPctDisplay">50%</strong>
+          </div>
+          <input type="range" id="manualPctSlider" min="0" max="100" step="1" value="50" />
+        </div>
+
+        <div class="row-two">
+          <div class="control-group">
+            <label for="ratedWattsInput" class="control-label">LED Load Rating (Watts)</label>
+            <input type="number" id="ratedWattsInput" class="input-number" min="1" max="50000" value="12" />
+          </div>
+          <div class="control-group">
+            <label for="tariffInput" class="control-label">Electricity Rate (₹/kWh)</label>
+            <input type="number" id="tariffInput" class="input-number" min="0" step="0.5" value="7.0" />
+          </div>
+        </div>
+      </article>
+
+      <!-- Simulator & Event Console -->
+      <article class="card">
+        <div class="card-head">
+          <h2>Daylight Simulator &amp; Serial Console</h2>
+          <span class="card-hint" id="simBadge">Active when ESP32 is not connected</span>
+        </div>
+
+        <div id="simulatorControls">
+          <div class="control-group">
+            <label class="control-label">Weather / Sunlight Condition</label>
+            <div class="preset-grid">
+              <button class="preset-btn active" data-weather="sunny">☀ Clear Sun</button>
+              <button class="preset-btn" data-weather="cloudy">⛅ Passing Clouds</button>
+              <button class="preset-btn" data-weather="overcast">☁ Overcast</button>
+              <button class="preset-btn" data-weather="night">🌙 Night</button>
+              <button class="preset-btn" data-weather="auto_cycle">🔄 24h Day Cycle</button>
+              <button class="preset-btn" data-weather="custom">🎛 Custom Lux</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-head">
+              <label for="simHourSlider">Simulated Time of Day</label>
+              <strong id="simHourDisplay">10:30</strong>
+            </div>
+            <input type="range" id="simHourSlider" min="0" max="24" step="0.25" value="10.5" />
+          </div>
+
+          <div class="control-group">
+            <div class="slider-head">
+              <label for="simCustomLuxSlider">Custom Sunlight Intensity (Test LDR)</label>
+              <strong id="simCustomLuxDisplay">620 lux</strong>
+            </div>
+            <input type="range" id="simCustomLuxSlider" min="0" max="1000" step="10" value="620" />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">System &amp; Serial Log</label>
+          <div class="console-box" id="consoleLog" role="log" aria-live="polite"></div>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
